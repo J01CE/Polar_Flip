@@ -10,8 +10,8 @@ public class MagneticBall : MonoBehaviour
     [Header("Magnet Settings")]
     public float triggerHeight = 4f;
     public float hoverHeight   = 1.2f;
-    public float attractSpeed  = 8f;
-    public float repelForce    = 15f;
+    public float attractSpeed  = 10f;
+    public float repelForce    = 12f;
 
     // ── Visual ────────────────────────────────────────────
     [Header("Visual Feedback")]
@@ -44,7 +44,7 @@ public class MagneticBall : MonoBehaviour
         {
             isPositive = !isPositive;
 
-            // Small upward kick to help player navigate after flip
+            // Small upward kick so the player can navigate after a flip
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, 3f);
 
             UpdateColor();
@@ -54,7 +54,7 @@ public class MagneticBall : MonoBehaviour
     // ─────────────────────────────────────────────────────
     void FixedUpdate()
     {
-        bool isAttracting = false;
+        bool reduceGravity = false;
 
         foreach (MagneticObject obj in magneticObjects)
         {
@@ -63,40 +63,43 @@ public class MagneticBall : MonoBehaviour
             Vector2 toObject = (Vector2)obj.transform.position - (Vector2)transform.position;
             float   distance = toObject.magnitude;
 
-            // Outside trigger range — skip
             if (distance > triggerHeight) continue;
 
+            // 0 at the edge of range → 1 right at the magnet center
+            float t = 1f - (distance / triggerHeight);
+
             bool samePolarity = (isPositive == obj.isPositive);
+            bool magnetBelow  = obj.transform.position.y < transform.position.y - 0.3f;
+            bool magnetAbove  = obj.transform.position.y > transform.position.y + 0.3f;
 
             if (samePolarity)
             {
-                // ── Repel ──────────────────────────────────────────
-                // Push ball directly away; force grows stronger the closer it is
-                Vector2 repelDir      = -toObject.normalized;
-                float   forceMagnitude = repelForce * (1f - distance / triggerHeight);
-                rb.AddForce(repelDir * forceMagnitude, ForceMode2D.Force);
+                // ── REPEL ────────────────────────────────────────────
+                // Push ball away from the magnet.
+                rb.AddForce(-toObject.normalized * repelForce * t, ForceMode2D.Force);
+
+                // When the magnet is BELOW and we're repelling upward,
+                // gravity fights the force and keeps the ball glued to the surface.
+                // Reduce gravity so the repel force can actually levitate the ball.
+                if (magnetBelow)
+                    reduceGravity = true;
             }
             else
             {
-                // ── Attract ────────────────────────────────────────
-                // Pull ball toward a hover position just above the magnet object
-                Vector2 hoverTarget = (Vector2)obj.transform.position + Vector2.up * hoverHeight;
-                Vector2 toTarget    = hoverTarget - (Vector2)transform.position;
+                // ── ATTRACT ──────────────────────────────────────────
+                // Pull directly toward the magnet — strong, snappy feel.
+                rb.AddForce(toObject.normalized * attractSpeed * t * 2f, ForceMode2D.Force);
 
-                isAttracting = true;
-
-                // Apply force toward hover point; scale by distance for smooth arrival
-                float pullStrength = attractSpeed * Mathf.Clamp01(toTarget.magnitude / triggerHeight);
-                rb.AddForce(toTarget.normalized * pullStrength * attractSpeed, ForceMode2D.Force);
-
-                // Dampen velocity when very close to avoid oscillation
-                if (toTarget.magnitude < 0.6f)
-                    rb.linearVelocity *= 0.80f;
+                // Only reduce gravity when the magnet is ABOVE (need to lift upward).
+                // For floor magnets, gravity cooperates with the downward pull naturally.
+                if (magnetAbove)
+                    reduceGravity = true;
             }
         }
 
-        // Reduce gravity so magnetic attraction can actually lift the ball
-        rb.gravityScale = isAttracting ? 0.15f : 1f;
+        // 0.4 gravity scale lets the magnetic forces clearly win over gravity
+        // without making the ball feel completely weightless.
+        rb.gravityScale = reduceGravity ? 0.4f : 1f;
     }
 
     // ─────────────────────────────────────────────────────
