@@ -13,8 +13,11 @@ public class MagneticObject : MonoBehaviour
     public Color negativeColor = new Color(1f, 0.6f, 0.6f);   // light red
 
     [Header("Debug Info  —  read only")]
-    public bool ballIsAbove    = false;  // shows in Inspector during Play
-    public bool interacting    = false;  // shows in Inspector during Play
+    public bool ballIsAbove = false;
+    public bool interacting = false;
+
+    // ── Internal ──────────────────────────────────────────
+    private Transform ballTransform;
 
     // ─────────────────────────────────────────────────────
     void Start()
@@ -23,17 +26,27 @@ public class MagneticObject : MonoBehaviour
             spriteRenderer = GetComponent<SpriteRenderer>();
 
         UpdateColor();
+
+        // Cache the ball reference once instead of searching every frame
+        GameObject ball = GameObject.FindWithTag("ball");
+        if (ball != null)
+            ballTransform = ball.transform;
     }
 
     // ─────────────────────────────────────────────────────
     void Update()
     {
-        // Continuously check if ball is above this object
-        // This updates the debug flags visible in Inspector
-        GameObject ball = GameObject.FindWithTag("ball");
-        if (ball == null) return;
+        // Lazy re-find in case the ball wasn't in the scene yet at Start
+        if (ballTransform == null)
+        {
+            GameObject ball = GameObject.FindWithTag("ball");
+            if (ball != null)
+                ballTransform = ball.transform;
+            else
+                return;
+        }
 
-        float ballY   = ball.transform.position.y;
+        float ballY   = ballTransform.position.y;
         float objectY = transform.position.y;
 
         ballIsAbove = ballY > objectY + 0.5f;
@@ -50,10 +63,9 @@ public class MagneticObject : MonoBehaviour
     // Shows field area above this object in Scene view
     void OnDrawGizmosSelected()
     {
-        Gizmos.color = isPositive ? new Color(0,0,1,0.3f)
-                                  : new Color(1,0,0,0.3f);
+        Gizmos.color = isPositive ? new Color(0, 0, 1, 0.3f)
+                                  : new Color(1, 0, 0, 0.3f);
 
-        // Draw a box above this object showing the trigger zone
         Vector3 center = transform.position + Vector3.up * 2f;
         Vector3 size   = new Vector3(2f, 4f, 0f);
         Gizmos.DrawCube(center, size);

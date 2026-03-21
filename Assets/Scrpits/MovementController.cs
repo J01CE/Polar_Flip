@@ -1,39 +1,47 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody2D))]
 public class MovementController : MonoBehaviour
 {
-    Vector2 move;
-    public int speed;
+    [Header("Movement")]
+    public float speed = 5f;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    // ── Internal ──────────────────────────────────────────
+    private Rigidbody2D rb;
+    private float       moveX;
+
+    // ─────────────────────────────────────────────────────
     void Start()
     {
-
+        rb = GetComponent<Rigidbody2D>();
     }
 
-    // Update is called once per frame
+    // Read input in Update for responsiveness
     void Update()
     {
-
-        move = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
-                
-        transform.Translate(move * speed * Time.deltaTime);
-        flip();
+        moveX = Input.GetAxis("Horizontal");
+        Flip(moveX);
     }
 
-
-    void flip()
+    // Apply movement in FixedUpdate to sync with physics engine
+    void FixedUpdate()
     {
-        if (move.x < -0.01f)
-        {
-            transform.localScale = new Vector3(-7, 7, 1);
-        }
-        else if (move.x > 0.01f)
-        {
-            transform.localScale = new Vector3(7, 7, 1);
-        }
+        // Only override X velocity; preserve Y so gravity and magnetic forces work correctly
+        rb.linearVelocity = new Vector2(moveX * speed, rb.linearVelocity.y);
+    }
+
+    // ─────────────────────────────────────────────────────
+    // Flip sprite horizontally by negating localScale.x
+    // Uses Mathf.Abs to preserve the original scale magnitude (e.g. 7)
+    void Flip(float x)
+    {
+        if (x < -0.01f)
+            transform.localScale = new Vector3(
+                -Mathf.Abs(transform.localScale.x),
+                transform.localScale.y, 1f);
+        else if (x > 0.01f)
+            transform.localScale = new Vector3(
+                Mathf.Abs(transform.localScale.x),
+                transform.localScale.y, 1f);
     }
 }
-    
