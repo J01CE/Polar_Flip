@@ -19,7 +19,13 @@ public class MovementController : MonoBehaviour
     // Read input in Update for responsiveness
     void Update()
     {
-        moveX = Input.GetAxis("Horizontal");
+        // Support both keyboard and touch buttons
+        float keyboardInput = Input.GetAxis("Horizontal");
+        float touchInput = MoveButton.HeldDirection;
+        
+        // Sum the inputs, then clamp between -1 and 1
+        moveX = Mathf.Clamp(keyboardInput + touchInput, -1f, 1f);
+        
         Flip(moveX);
     }
 

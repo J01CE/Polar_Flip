@@ -42,13 +42,23 @@ public class MagneticBall : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.F))
         {
-            isPositive = !isPositive;
+            FlipPolarity();
+        }
+    }
 
-            // Small upward kick so the player can navigate after a flip
+    /// <summary>
+    /// Toggles the ball's polarity, adds a small upward kick, and updates visuals.
+    /// Public so it can be called by UI buttons (FlipButton.cs).
+    /// </summary>
+    public void FlipPolarity()
+    {
+        isPositive = !isPositive;
+
+        // Small upward kick so the player can navigate after a flip
+        if (rb != null)
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, 3f);
 
-            UpdateColor();
-        }
+        UpdateColor();
     }
 
     // ─────────────────────────────────────────────────────
@@ -69,8 +79,8 @@ public class MagneticBall : MonoBehaviour
             float t = 1f - (distance / triggerHeight);
 
             bool samePolarity = (isPositive == obj.isPositive);
-            bool magnetBelow  = obj.transform.position.y < transform.position.y - 0.3f;
-            bool magnetAbove  = obj.transform.position.y > transform.position.y + 0.3f;
+            bool magnetBelow  = obj.transform.position.y < transform.position.y - 0.5f;
+            bool magnetAbove  = obj.transform.position.y > transform.position.y + 1.0f;
 
             if (samePolarity)
             {
@@ -99,7 +109,7 @@ public class MagneticBall : MonoBehaviour
 
         // 0.4 gravity scale lets the magnetic forces clearly win over gravity
         // without making the ball feel completely weightless.
-        rb.gravityScale = reduceGravity ? 0.4f : 1f;
+        rb.gravityScale = reduceGravity ? 0.6f : 1f;
     }
 
     // ─────────────────────────────────────────────────────
