@@ -38,7 +38,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject congratsPanel;
 
     [Header("Settings")]
-    [SerializeField] private int lastLevelBuildIndex = 3;
+    [SerializeField] private int lastLevelBuildIndex = 5;
+    [SerializeField] private string comingSoonScene   = "coming soon";
 
     // ── Retry delay when no UI is available ───────────────
     [SerializeField] private float autoRetryDelay  = 1.5f;
@@ -111,9 +112,10 @@ public class GameManager : MonoBehaviour
         int current = SceneManager.GetActiveScene().buildIndex;
         bool isLastLevel = current >= lastLevelBuildIndex;
 
-        if (isLastLevel && congratsPanel != null)
+        if (isLastLevel)
         {
-            congratsPanel.SetActive(true);
+            // Load "coming soon" scene after final level
+            Invoke(nameof(LoadComingSoon), autoWinDelay);
         }
         else if (!isLastLevel && winPanel != null)
         {
@@ -121,11 +123,8 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            // No UI: auto-advance after a short pause
-            if (isLastLevel)
-                Invoke(nameof(PlayAgain), autoWinDelay);
-            else
-                Invoke(nameof(LoadNextLevel), autoWinDelay);
+            // No UI: auto-advance
+            Invoke(nameof(LoadNextLevel), autoWinDelay);
         }
     }
 
@@ -159,6 +158,20 @@ public class GameManager : MonoBehaviour
     public void LoadMainMenu()
     {
         SceneManager.LoadScene(0);
+    }
+
+    public void LoadComingSoon()
+    {
+        SceneManager.LoadScene(comingSoonScene);
+    }
+
+    public void QuitGame()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
     }
 
     // ── Helpers ───────────────────────────────────────────
